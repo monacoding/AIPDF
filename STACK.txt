@@ -1,0 +1,7 @@
+기능	사용 기술
+PDF 텍스트 추출	pdfplumber, PyMuPDF (fitz)
+데이터 저장	SQLite, PostgreSQL
+문장 비교	difflib, Levenshtein, spaCy, BERT
+로컬 LLM	GPT4All, Llama.cpp, Mistral
+GUI (선택사항)	Streamlit, Tkinter, PyQt
+보고서 생성	pan
