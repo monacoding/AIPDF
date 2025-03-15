@@ -19,9 +19,11 @@ differences = []
 
 # difflib을 사용한 문장 비교 함수
 def get_diff(std_text, proj_text):
-    differ = difflib.ndiff(std_text.split(), proj_text.split())
-    changes = [word for word in differ if word.startswith(" ") or word.startswith(" ")]
-    return " ".join(changes)
+    """추가된 문장만 반환하는 함수"""
+    std_words = set(std_text.split())
+    proj_words = proj_text.split()
+    added_words = [word for word in proj_words if word not in std_words]  # 추가된 단어만 필터링
+    return " ".join(added_words) if added_words else ""
 
 # Levenshtein 거리 계산 함수
 def get_similarity(std_text, proj_text):
@@ -35,7 +37,7 @@ for index, row in df.iterrows():
     # 유사도 분석
     similarity = get_similarity(std_text, proj_text)
     
-    # 변경 감지
+    # 추가된 문장 감지
     changes = get_diff(std_text, proj_text)
     
     # 추가/삭제/변경 여부 구분
@@ -63,4 +65,4 @@ df_comparison = pd.DataFrame(differences)
 # 비교 결과 저장
 df_comparison.to_excel(output_file, index=False)
 
-print(f"✅ 텍스트 비교 완료! 결과가 '{output_file}' 파일로 저장되었습니다!")
+print(f"✅ 텍스트 비교 완료! 추가된 문장만 필터링하여 '{output_file}' 파일로 저장되었습니다!")
