@@ -20,7 +20,7 @@ differences = []
 # difflib을 사용한 문장 비교 함수
 def get_diff(std_text, proj_text):
     differ = difflib.ndiff(std_text.split(), proj_text.split())
-    changes = [word for word in differ if word.startswith("+") or word.startswith("-")]
+    changes = [word for word in differ if word.startswith(" ") or word.startswith(" ")]
     return " ".join(changes)
 
 # Levenshtein 거리 계산 함수
