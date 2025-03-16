@@ -58,13 +58,10 @@ def generate_report(differences):
 
     [차이점 분석]
     {diff_analysis}
-
-    [결론]
-    차이점의 주요 의도와 프로젝트에 미치는 영향을 요약합니다.
     """
 
     messages = [
-        {"role": "system", "content": "당신은 사양서 비교 전문가입니다. 아래 Word 양식에 따라 차이점을 한국어로 분석하고 의도를 설명하는 보고서를 작성해주세요."},
+        {"role": "system", "content": "당신은 사양서 비교 전문가입니다. 아래 Word 양식에 따라 차이점을 한국어로 분석하고 의도를 설명하는 보고서를 작성해주세요. 결론 섹션은 포함하지 마세요."},
         {"role": "user", "content": f"""
         아래는 표준 사양서와 프로젝트 사양서의 비교 결과입니다. 다음 Word 양식에 따라 보고서를 작성해주세요:
 
@@ -124,15 +121,16 @@ def compare_specs():
         proj_paragraphs = split_into_paragraphs(proj_spec_text)
 
         differences = []
-        similarity_threshold = 0.5  # ✅ 임계값 낮춤으로 차이점 더 잘 감지
+        similarity_threshold = 0.5
 
+        # 표준 사양서 기반 비교
         for std_text in std_paragraphs:
             best_match, similarity_score = find_best_matching_paragraph(std_text, proj_paragraphs, similarity_threshold)
             print(f"📌 비교: std_text='{std_text}', best_match='{best_match}', similarity={similarity_score}")
             
-            if best_match:  # 매칭된 문단이 있으면 차이점 분석
+            if best_match:
                 diff_text = highlight_differences(std_text, best_match)
-                if diff_text:  # 차이점이 있을 때만 추가
+                if diff_text:
                     differences.append({
                         "표준 사양서": std_text,
                         "프로젝트 사양서": best_match,
@@ -145,48 +143,126 @@ def compare_specs():
                     "비교 결과": "📌 표준 사양서에만 존재"
                 })
 
+        # 프로젝트 사양서에만 있는 문단 확인
+        processed_proj_paragraphs = set(diff["프로젝트 사양서"] for diff in differences if diff["프로젝트 사양서"])
+        for proj_text in proj_paragraphs:
+            if proj_text not in processed_proj_paragraphs and proj_text:  # 표준 사양서에 없는 새 문단
+                differences.append({
+                    "표준 사양서": "",
+                    "프로젝트 사양서": proj_text,
+                    "비교 결과": f'<span class="added">{proj_text}</span>'  # 추가된 문단 표시
+                })
+
         report = generate_report(differences)
 
         html_content = f"""
         <!DOCTYPE html>
-        <html lang="en">
+        <html lang="ko">
         <head>
             <meta charset="UTF-8">
-            <title>Comparison Result</title>
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <title>현대중공업 선장설계부 호선 사양서 비교 프로그램</title>
+            <!-- Bootstrap 5 CDN -->
+            <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
             <style>
-                table {{ width: 100%; border-collapse: collapse; }}
-                th, td {{ border: 1px solid black; padding: 8px; text-align: left; vertical-align: top; }}
-                th {{ background-color: #f2f2f2; }}
-                .report {{ margin-top: 20px; padding: 10px; border: 1px solid #ccc; white-space: pre-wrap; }}
-                .added {{ color: red; font-weight: bold; }}
+                body {{
+                    background-color: #f8f9fa;
+                    font-family: 'Noto Sans KR', sans-serif;
+                }}
+                .header {{
+                    background-color: #28a745; /* 초록색 */
+                    color: white;
+                    padding: 20px;
+                    text-align: center;
+                    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+                }}
+                .container {{
+                    max-width: 1200px;
+                    margin: 40px auto;
+                    background-color: white;
+                    padding: 30px;
+                    border-radius: 10px;
+                    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+                }}
+                .form-section {{
+                    margin-bottom: 30px;
+                }}
+                .table {{
+                    margin-top: 20px;
+                    border-radius: 8px;
+                    overflow: hidden;
+                }}
+                .table th {{
+                    background-color: #e9ecef;
+                    color: #343a40;
+                }}
+                .table td {{
+                    vertical-align: middle;
+                }}
+                .report {{
+                    margin-top: 40px;
+                    padding: 20px;
+                    background-color: #f8f9fa;
+                    border-radius: 8px;
+                    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+                    white-space: pre-wrap;
+                }}
+                .added {{ color: #dc3545; font-weight: bold; }}
                 .deleted {{ text-decoration: line-through; }}
+                .btn-primary {{
+                    background-color: #003087;
+                    border-color: #003087;
+                    transition: background-color 0.3s;
+                }}
+                .btn-primary:hover {{
+                    background-color: #0056b3;
+                    border-color: #0056b3;
+                }}
+                .file-name {{
+                    margin-top: 10px;
+                    font-style: italic;
+                    color: #6c757d;
+                }}
             </style>
+            <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700&display=swap" rel="stylesheet">
         </head>
         <body>
-            <h1>Comparison Result</h1>
-            <h2>선종: {ship_type_name}</h2>
-            <table>
-                <tr>
-                    <th>표준 사양서</th>
-                    <th>프로젝트 사양서</th>
-                    <th>비교 결과</th>
-                </tr>
+            <div class="header">
+                <h1>현대중공업 선장설계부 호선 사양서 비교 프로그램</h1>
+            </div>
+            <div class="container">
+                <h2 class="mb-4">비교 결과: 선종 - {ship_type_name}</h2>
+                <div class="form-section">
+                    <p class="file-name">업로드된 파일: {proj_spec_file.filename}</p>
+                </div>
+                <table class="table table-bordered">
+                    <thead>
+                        <tr>
+                            <th>표준 사양서</th>
+                            <th>프로젝트 사양서</th>
+                            <th>비교 결과</th>
+                        </tr>
+                    </thead>
+                    <tbody>
         """
         for diff in differences:
             html_content += f"""
-                <tr>
-                    <td>{diff['표준 사양서']}</td>
-                    <td>{diff['프로젝트 사양서'] if diff['프로젝트 사양서'] else '-'}</td>
-                    <td>{diff['비교 결과'] if diff['비교 결과'] else '-'}</td>
-                </tr>
+                        <tr>
+                            <td>{diff['표준 사양서'] if diff['표준 사양서'] else '-'}</td>
+                            <td>{diff['프로젝트 사양서'] if diff['프로젝트 사양서'] else '-'}</td>
+                            <td>{diff['비교 결과'] if diff['비교 결과'] else '-'}</td>
+                        </tr>
             """
         html_content += f"""
-            </table>
-            <div class="report">
-                <h3>비교 보고서</h3>
-                <p>{report}</p>
+                    </tbody>
+                </table>
+                <div class="report">
+                    <h3 class="mb-3">비교 보고서</h3>
+                    <p>{report}</p>
+                </div>
+                <a href="/" class="btn btn-primary mt-4">다시 비교하기</a>
             </div>
-            <br><a href="/">다시 비교하기</a>
+            <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
         </body>
         </html>
         """
@@ -200,30 +276,85 @@ def compare_specs():
 
     return render_template_string("""
     <!DOCTYPE html>
-    <html lang="en">
+    <html lang="ko">
     <head>
         <meta charset="UTF-8">
-        <title>사양서 비교</title>
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>현대중공업 선장설계부 호선 사양서 비교 프로그램</title>
+        <!-- Bootstrap 5 CDN -->
+        <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
         <style>
-            body { font-family: Arial, sans-serif; margin: 20px; }
-            label { margin-right: 10px; }
-            select, input[type="file"], input[type="submit"] { margin: 10px 0; }
+            body {
+                background-color: #f8f9fa;
+                font-family: 'Noto Sans KR', sans-serif;
+            }
+            .header {
+                background-color: #28a745; /* 초록색 */
+                color: white;
+                padding: 20px;
+                text-align: center;
+                box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            }
+            .container {
+                max-width: 1200px;
+                margin: 40px auto;
+                background-color: white;
+                padding: 30px;
+                border-radius: 10px;
+                box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            }
+            .btn-primary {
+                background-color: #003087;
+                border-color: #003087;
+                transition: background-color 0.3s;
+            }
+            .btn-primary:hover {
+                background-color: #0056b3;
+                border-color: #0056b3;
+            }
+            .form-section {
+                margin-bottom: 30px;
+            }
+            .file-name {
+                margin-top: 10px;
+                font-style: italic;
+                color: #6c757d;
+            }
         </style>
+        <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700&display=swap" rel="stylesheet">
     </head>
     <body>
-        <h1>사양서 비교</h1>
-        <form method="post" enctype="multipart/form-data">
-            <label for="ship_type">선종 선택:</label>
-            <select name="ship_type" id="ship_type" required>
-                <option value="">선종을 선택하세요</option>
-                {% for key, value in ship_types.items() %}
-                    <option value="{{ key }}">{{ key }}. {{ value[0] }}</option>
-                {% endfor %}
-            </select><br>
-            <label for="proj_spec">프로젝트 사양서 업로드:</label>
-            <input type="file" name="proj_spec" id="proj_spec" accept=".pdf" required><br>
-            <input type="submit" value="비교 시작">
-        </form>
+        <div class="header">
+            <h1>현대중공업 선장설계부 호선 사양서 비교 프로그램</h1>
+        </div>
+        <div class="container">
+            <div class="form-section">
+                <form method="post" enctype="multipart/form-data">
+                    <div class="mb-3">
+                        <label for="ship_type" class="form-label">선종 선택:</label>
+                        <select name="ship_type" id="ship_type" class="form-select" required>
+                            <option value="">선종을 선택하세요</option>
+                            {% for key, value in ship_types.items() %}
+                                <option value="{{ key }}">{{ key }}. {{ value[0] }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="proj_spec" class="form-label">프로젝트 사양서 업로드:</label>
+                        <input type="file" name="proj_spec" id="proj_spec" class="form-control" accept=".pdf" required>
+                        <div id="file-name" class="file-name">선택된 파일: 없음</div>
+                    </div>
+                    <button type="submit" class="btn btn-primary">비교 시작</button>
+                </form>
+            </div>
+        </div>
+        <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+        <script>
+            document.getElementById('proj_spec').addEventListener('change', function() {
+                const fileName = this.files[0] ? this.files[0].name : '없음';
+                document.getElementById('file-name').textContent = '선택된 파일: ' + fileName;
+            });
+        </script>
     </body>
     </html>
     """, ship_types=ship_types)
@@ -254,20 +385,19 @@ def find_best_matching_paragraph(std_paragraph, proj_paragraphs, threshold=0.85)
     return best_match, best_score
 
 def highlight_differences(std_text, proj_text):
-    """차이점을 HTML 태그로 표시 (추가: 빨간색 볼드체, 삭제: 취소선)"""
     if not std_text or not proj_text:
         return ""
     diff = list(difflib.ndiff(std_text.split(), proj_text.split()))
     highlighted_text = []
     for word in diff:
-        if word.startswith("+ "):  # 추가된 단어
+        if word.startswith("+ "):
             highlighted_text.append(f'<span class="added">{word[2:]}</span>')
-        elif word.startswith("- "):  # 삭제된 단어
+        elif word.startswith("- "):
             highlighted_text.append(f'<span class="deleted">{word[2:]}</span>')
-        else:  # 변경되지 않은 단어
+        else:
             highlighted_text.append(word[2:] if word.startswith("  ") else word)
     result = " ".join(highlighted_text)
-    print(f"📌 Highlighted diff: {result}")  # 디버깅 로그
+    print(f"📌 Highlighted diff: {result}")
     return result if result else ""
 
 if __name__ == "__main__":
