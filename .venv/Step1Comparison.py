@@ -9,15 +9,17 @@ from dotenv import load_dotenv
 
 app = Flask(__name__)
 
-# 📌 .env 파일에서 환경 변수 로드
-load_dotenv()
+# 📌 .env 파일에서 환경 변수 로드 (절대 경로로 명시)
+env_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), ".env")
+load_dotenv(dotenv_path=env_path)
 
 # 📌 OpenAI API 설정
 OPENAI_API_URL = "https://api.openai.com/v1/chat/completions"
-OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")  # .env 또는 시스템 환경 변수에서 가져옴
+OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 OPENAI_MODEL = "gpt-3.5-turbo"
 
-# API 키 확인
+# API 키 디버깅
+print(f"📌 Loaded OPENAI_API_KEY: {OPENAI_API_KEY if OPENAI_API_KEY else 'Not found'}")
 if not OPENAI_API_KEY:
     raise ValueError("OPENAI_API_KEY가 설정되지 않았습니다. .env 파일 또는 환경 변수를 확인하세요.")
 
@@ -74,7 +76,7 @@ def generate_report(differences):
     ]
 
     headers = {
-        "Authorization": f"Bearer {OPENAI_API_KEY}",
+        "Authorization": f"Bearer {OPENAI_API_KEY.strip()}",  # 공백 제거
         "Content-Type": "application/json"
     }
     payload = {
@@ -84,6 +86,7 @@ def generate_report(differences):
         "temperature": 0.7
     }
     try:
+        print(f"📌 Sending request to OpenAI with headers: {headers}")
         response = requests.post(OPENAI_API_URL, headers=headers, json=payload)
         response.raise_for_status()
         result = response.json()
