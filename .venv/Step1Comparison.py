@@ -9,7 +9,7 @@ from dotenv import load_dotenv
 
 app = Flask(__name__)
 
-# 📌 .env 파일에서 환경 변수 로드 (절대 경로로 명시)
+# 📌 .env 파일에서 환경 변수 로드
 env_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), ".env")
 load_dotenv(dotenv_path=env_path)
 
@@ -76,7 +76,7 @@ def generate_report(differences):
     ]
 
     headers = {
-        "Authorization": f"Bearer {OPENAI_API_KEY.strip()}",  # 공백 제거
+        "Authorization": f"Bearer {OPENAI_API_KEY.strip()}",
         "Content-Type": "application/json"
     }
     payload = {
@@ -124,23 +124,26 @@ def compare_specs():
         proj_paragraphs = split_into_paragraphs(proj_spec_text)
 
         differences = []
-        similarity_threshold = 0.85
+        similarity_threshold = 0.5  # ✅ 임계값 낮춤으로 차이점 더 잘 감지
 
         for std_text in std_paragraphs:
             best_match, similarity_score = find_best_matching_paragraph(std_text, proj_paragraphs, similarity_threshold)
+            print(f"📌 비교: std_text='{std_text}', best_match='{best_match}', similarity={similarity_score}")
             
-            if similarity_score > similarity_threshold:
+            if best_match:  # 매칭된 문단이 있으면 차이점 분석
                 diff_text = highlight_differences(std_text, best_match)
-                if not diff_text:
-                    continue
+                if diff_text:  # 차이점이 있을 때만 추가
+                    differences.append({
+                        "표준 사양서": std_text,
+                        "프로젝트 사양서": best_match,
+                        "비교 결과": diff_text
+                    })
             else:
-                diff_text = f"📌 새로운 문단 추가됨: {best_match}" if best_match else ""
-            
-            differences.append({
-                "표준 사양서": std_text,
-                "프로젝트 사양서": best_match,
-                "비교 결과": diff_text if diff_text else best_match
-            })
+                differences.append({
+                    "표준 사양서": std_text,
+                    "프로젝트 사양서": "",
+                    "비교 결과": "📌 표준 사양서에만 존재"
+                })
 
         report = generate_report(differences)
 
@@ -155,6 +158,8 @@ def compare_specs():
                 th, td {{ border: 1px solid black; padding: 8px; text-align: left; vertical-align: top; }}
                 th {{ background-color: #f2f2f2; }}
                 .report {{ margin-top: 20px; padding: 10px; border: 1px solid #ccc; white-space: pre-wrap; }}
+                .added {{ color: red; font-weight: bold; }}
+                .deleted {{ text-decoration: line-through; }}
             </style>
         </head>
         <body>
@@ -171,8 +176,8 @@ def compare_specs():
             html_content += f"""
                 <tr>
                     <td>{diff['표준 사양서']}</td>
-                    <td>{diff['프로젝트 사양서']}</td>
-                    <td>{diff['비교 결과']}</td>
+                    <td>{diff['프로젝트 사양서'] if diff['프로젝트 사양서'] else '-'}</td>
+                    <td>{diff['비교 결과'] if diff['비교 결과'] else '-'}</td>
                 </tr>
             """
         html_content += f"""
@@ -249,16 +254,21 @@ def find_best_matching_paragraph(std_paragraph, proj_paragraphs, threshold=0.85)
     return best_match, best_score
 
 def highlight_differences(std_text, proj_text):
+    """차이점을 HTML 태그로 표시 (추가: 빨간색 볼드체, 삭제: 취소선)"""
+    if not std_text or not proj_text:
+        return ""
     diff = list(difflib.ndiff(std_text.split(), proj_text.split()))
     highlighted_text = []
     for word in diff:
-        if word.startswith("+ "):
-            highlighted_text.append(f'<span style="color: red; font-weight: bold;">{word[2:]}</span>')
-        elif word.startswith("- "):
-            highlighted_text.append(f'<span style="text-decoration: line-through;">{word[2:]}</span>')
-        else:
+        if word.startswith("+ "):  # 추가된 단어
+            highlighted_text.append(f'<span class="added">{word[2:]}</span>')
+        elif word.startswith("- "):  # 삭제된 단어
+            highlighted_text.append(f'<span class="deleted">{word[2:]}</span>')
+        else:  # 변경되지 않은 단어
             highlighted_text.append(word[2:] if word.startswith("  ") else word)
-    return " ".join(highlighted_text) if highlighted_text else ""
+    result = " ".join(highlighted_text)
+    print(f"📌 Highlighted diff: {result}")  # 디버깅 로그
+    return result if result else ""
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5002, debug=True)
