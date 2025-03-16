@@ -50,18 +50,12 @@ def generate_report(differences):
         diff_text += f"- 차이점: {diff['비교 결과']}\n\n"
 
     report_template = """
-    [제목]
-    사양서 비교 보고서
-
-    [개요]
-    본 보고서는 표준 사양서와 프로젝트 사양서 간 차이점을 분석하고, 그 의도를 설명합니다.
-
     [차이점 분석]
     {diff_analysis}
     """
 
     messages = [
-        {"role": "system", "content": "당신은 사양서 비교 전문가입니다. 아래 Word 양식에 따라 차이점을 한국어로 분석하고 의도를 설명하는 보고서를 작성해주세요. 결론 섹션은 포함하지 마세요."},
+        {"role": "system", "content": "당신은 사양서 비교 전문가입니다. 아래 Word 양식에 따라 차이점만 한국어로 분석하고 의도를 설명하는 보고서를 작성해주세요. 제목과 개요는 포함하지 마세요."},
         {"role": "user", "content": f"""
         아래는 표준 사양서와 프로젝트 사양서의 비교 결과입니다. 다음 Word 양식에 따라 보고서를 작성해주세요:
 
@@ -223,6 +217,16 @@ def compare_specs():
                     font-style: italic;
                     color: #6c757d;
                 }}
+                @media print {{
+                    .container {{
+                        box-shadow: none;
+                        margin: 0;
+                        padding: 20px;
+                    }}
+                    .btn-primary, .file-name {{
+                        display: none;
+                    }}
+                }}
             </style>
             <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700&display=swap" rel="stylesheet">
         </head>
@@ -260,7 +264,10 @@ def compare_specs():
                     <h3 class="mb-3">비교 보고서</h3>
                     <p>{report}</p>
                 </div>
-                <a href="/" class="btn btn-primary mt-4">다시 비교하기</a>
+                <div class="mt-4">
+                    <a href="/" class="btn btn-primary me-2">다시 비교하기</a>
+                    <button class="btn btn-secondary" onclick="window.print()">출력</button>
+                </div>
             </div>
             <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
         </body>
