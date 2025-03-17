@@ -18,8 +18,8 @@ OPENAI_API_URL = "https://api.openai.com/v1/chat/completions"
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 OPENAI_MODEL = "gpt-3.5-turbo"
 
-# 📌 표준 사양서 경로 (예시)
-std_spec_path = "/Users/gimtaehyeong/Desktop/코딩/개발/AIPDF/DB/SPEC/STD_SPEC_4.pdf"
+# 📌 표준 사양서 경로
+std_spec_path = "/Users/gimtaehyeong/Desktop/코딩/개발/AIPDF/DB/SPEC/STD_SPEC_3.pdf"
 
 # 📌 선종 목록 정의
 ship_types = {
@@ -220,7 +220,7 @@ def compare_specs():
                     font-family: 'Noto Sans KR', sans-serif;
                 }}
                 .header {{
-                    background-color: #28a745;
+                    background-color: #28a745; /* 초록색 */
                     color: white;
                     padding: 20px;
                     text-align: center;
@@ -260,7 +260,6 @@ def compare_specs():
                     vertical-align: middle;
                     padding: 12px;
                     border-bottom: 1px solid #dee2e6;
-                    white-space: pre-wrap;  /* 줄바꿈 보존 */
                 }}
                 .report {{
                     margin-top: 40px;
@@ -268,7 +267,7 @@ def compare_specs():
                     background-color: #f8f9fa;
                     border-radius: 8px;
                     box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-                    white-space: pre-wrap;  /* 보고서도 줄바꿈 보존 */
+                    white-space: pre-wrap;
                 }}
                 .added {{ color: #dc3545; font-weight: bold; }}
                 .deleted {{ text-decoration: line-through; }}
@@ -377,7 +376,7 @@ def compare_specs():
                 font-family: 'Noto Sans KR', sans-serif;
             }
             .header {
-                background-color: #28a745;
+                background-color: #28a745; /* 초록색 */
                 color: white;
                 padding: 20px;
                 text-align: center;
@@ -409,7 +408,7 @@ def compare_specs():
                 color: #6c757d;
             }
         </style>
-        <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700&display=swap" rel="stylesheet">
+        <link href="https://fonts.googleapis.com/css2?family=Noto Sans+KR:wght@400;700&display=swap" rel="stylesheet">
     </head>
     <body>
         <div class="header">
@@ -473,51 +472,20 @@ def find_best_matching_paragraph(std_paragraph, proj_paragraphs, threshold=0.85)
     return best_match, best_score
 
 def highlight_differences(std_text, proj_text):
-    """
-    줄바꿈을 <NEWLINE> 토큰으로 치환하여 ndiff를 수행하고,
-    결과를 HTML 태그(<span class="added">, <span class="deleted">, <br>)로 변환
-    """
     if not std_text or not proj_text:
         return ""
-    
-    # 1) 줄바꿈을 임시 토큰 <NEWLINE>으로 치환
-    std_text_token = std_text.replace('\n', ' <NEWLINE> ')
-    proj_text_token = proj_text.replace('\n', ' <NEWLINE> ')
-
-    # 2) ndiff 수행 (단어 단위)
-    diff = list(difflib.ndiff(std_text_token.split(), proj_text_token.split()))
+    diff = list(difflib.ndiff(std_text.split(), proj_text.split()))
     highlighted_text = []
-
-    for token in diff:
-        sign = token[:2]  # "+ ", "- ", "  "
-        word = token[2:]  # 실제 단어(혹은 <NEWLINE>)
-
-        if sign == "+ ":
-            # 추가된 단어
-            if word == "<NEWLINE>":
-                highlighted_text.append("<br>")
-            else:
-                highlighted_text.append(f'<span class="added">{word}</span>')
-        elif sign == "- ":
-            # 삭제된 단어
-            if word == "<NEWLINE>":
-                highlighted_text.append("<br>")
-            else:
-                highlighted_text.append(f'<span class="deleted">{word}</span>')
+    for word in diff:
+        if word.startswith("+ "):
+            highlighted_text.append(f'<span class="added">{word[2:]}</span>')
+        elif word.startswith("- "):
+            highlighted_text.append(f'<span class="deleted">{word[2:]}</span>')
         else:
-            # 변경 없는 단어
-            if word == "<NEWLINE>":
-                highlighted_text.append("<br>")
-            else:
-                highlighted_text.append(word)
-
-    # 3) " ".join으로 합친 뒤, <br> 앞뒤의 공백 정리
-    joined = " ".join(highlighted_text)
-    # <br> 전후 불필요한 공백 제거
-    joined = re.sub(r'\s+<br>', '<br>', joined)
-    joined = re.sub(r'<br>\s+', '<br>', joined)
-
-    return joined
+            highlighted_text.append(word[2:] if word.startswith("  ") else word)
+    result = " ".join(highlighted_text)
+    print(f"📌 Highlighted diff: {result}")
+    return result if result else ""
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5002, debug=True)
