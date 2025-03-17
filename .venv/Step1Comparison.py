@@ -18,13 +18,14 @@ OPENAI_API_URL = "https://api.openai.com/v1/chat/completions"
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 OPENAI_MODEL = "gpt-3.5-turbo"
 
+
 # API 키 디버깅
-print(f"📌 Loaded OPENAI_API_KEY: {OPENAI_API_KEY if OPENAI_API_KEY else 'Not found'}")
-if not OPENAI_API_KEY:
-    raise ValueError("OPENAI_API_KEY가 설정되지 않았습니다. .env 파일 또는 환경 변수를 확인하세요.")
+#print(f"📌 Loaded OPENAI_API_KEY: {OPENAI_API_KEY if OPENAI_API_KEY else 'Not found'}")
+#if not OPENAI_API_KEY:
+#    raise ValueError("OPENAI_API_KEY가 설정되지 않았습니다. .env 파일 또는 환경 변수를 확인하세요.")
 
 # 📌 표준 사양서 경로
-std_spec_path = "/Users/gimtaehyeong/Desktop/코딩/개발/AIPDF/DB/SPEC/STD_SPEC_2.pdf"
+std_spec_path = "/Users/gimtaehyeong/Desktop/코딩/개발/AIPDF/DB/SPEC/STD_SPEC_3.pdf"
 
 # 📌 선종 목록 정의
 ship_types = {
