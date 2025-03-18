@@ -315,7 +315,7 @@ def compare_specs():
             if section_title or section_diffs:  # 유효한 섹션만 표시
                 html_content += f"""
                     <div class="section-card">
-                        <div class="section-header">{section_title if section_title else 'Unnamed Section'}</div>
+                        <div class="section-header">{section_title if section_title else ' '}</div>
                         <table class="table table-bordered">
                             <thead>
                                 <tr>
